@@ -1,0 +1,62 @@
+permissions:
+  contents: write
+name: Generate Custom Duration Key
+
+on:
+  schedule:
+    - cron: '0 16 * * *'  # 12 midnight PH time (UTC+8)
+  workflow_dispatch:
+    inputs:
+      duration_value:
+        description: 'Duration value (number)'
+        required: true
+        default: '1'
+      duration_unit:
+        description: 'Duration unit'
+        required: true
+        default: 'days'
+        type: choice
+        options:
+          - days
+          - weeks
+          - months
+          - years
+
+jobs:
+  generate-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Generate Key with Retry
+        run: |
+          pip install --upgrade pip
+          mkdir -p keys
+          duration_value="${{ github.event.inputs.duration_value || '1' }}"
+          duration_unit="${{ github.event.inputs.duration_unit || 'days' }}"
+          ATTEMPTS=0
+          MAX_ATTEMPTS=5
+          until python generatekey.py "$duration_value" "$duration_unit"
+          do
+            ATTEMPTS=$((ATTEMPTS+1))
+            if [ "$ATTEMPTS" -ge "$MAX_ATTEMPTS" ]; then
+              echo "Key generation failed after $MAX_ATTEMPTS attempts."
+              exit 1
+            fi
+            echo "Key generation failed. Retrying in 10 seconds..."
+            sleep 10
+          done
+      - name: Commit and Push Keys
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add keys/
+          duration_value="${{ github.event.inputs.duration_value || '1' }}"
+          duration_unit="${{ github.event.inputs.duration_unit || 'days' }}"
+          start_date=$(date -u -d '+8 hours' +'%Y-%m-%d')
+          expiry_date=$(date -u -d "+8 hours +${duration_value} ${duration_unit}" +'%Y-%m-%d')
+          git commit -m "Add key for ${start_date} to ${expiry_date} (${duration_value} ${duration_unit})" || echo "No changes to commit"
+          git push

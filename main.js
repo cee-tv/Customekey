@@ -55,8 +55,8 @@ function renderLink() {
 }
 
 async function triggerWorkflow() {
-  const repo = 'cee-tv/iptvphkey';
-  const workflowId = 'daily-key.yml';
+  const repo = 'cee-tv/Customekey';
+  const workflowId = 'customkey.yml';
   
   try {
     const response = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${workflowId}/dispatches`, {
@@ -109,7 +109,7 @@ async function loadKey() {
   `;
 
   const fileName = getDurationFileName();
-  const url = `https://raw.githubusercontent.com/cee-tv/iptvphkey/main/keys/${fileName}`;
+  const url = `https://raw.githubusercontent.com/cee-tv/Customekey/main/keys/${fileName}`;
 
   try {
     const response = await fetch(url);

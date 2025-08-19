@@ -11,6 +11,7 @@ on:
         description: 'Duration value (number)'
         required: true
         default: '1'
+        type: string
       duration_unit:
         description: 'Duration unit'
         required: true

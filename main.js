@@ -6,11 +6,11 @@ const directLink = {
 let currentDuration = { value: 1, unit: 'days' };
 
 function getDurationFileName() {
-  // Use PH time (UTC+8) to match backend
-  const phTime = new Date(new Date().getTime() + (8 * 60 * 60 * 1000));
-  const yyyy = phTime.getUTCFullYear();
-  const mm = String(phTime.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(phTime.getUTCDate()).padStart(2, '0');
+  // Get today's date in UTC
+  const now = new Date();
+  const yyyy = now.getUTCFullYear();
+  const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(now.getUTCDate()).padStart(2, '0');
   const durationDays = convertToDays(currentDuration.value, currentDuration.unit);
   return `${yyyy}-${mm}-${dd}_${durationDays}days.txt`;
 }
@@ -54,10 +54,47 @@ function renderLink() {
   `;
 }
 
+async function triggerWorkflow() {
+  const repo = 'cee-tv/iptvphkey';
+  const workflowId = 'daily-key.yml';
+  
+  try {
+    const response = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${workflowId}/dispatches`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ref: 'main',
+        inputs: {
+          duration_value: currentDuration.value.toString(),
+          duration_unit: currentDuration.unit
+        }
+      })
+    });
+    
+    if (response.ok) {
+      console.log('Workflow triggered successfully');
+    } else {
+      console.log('Workflow trigger failed (might be rate limited or unauthorized)');
+    }
+  } catch (error) {
+    console.log('Error triggering workflow:', error);
+  }
+}
+
 function handleLinkClick() {
   document.getElementById('direct-link-btn').disabled = true;
   document.getElementById('direct-link-btn').innerHTML = '<i class="bi bi-check-circle"></i> Link Clicked';
-  loadKey();
+  
+  // Trigger the workflow first
+  triggerWorkflow();
+  
+  // Then load the key after a short delay to allow workflow to complete
+  setTimeout(() => {
+    loadKey();
+  }, 3000);
 }
 
 async function loadKey() {
@@ -72,16 +109,11 @@ async function loadKey() {
   `;
 
   const fileName = getDurationFileName();
-  const repoBase = 'cee-tv/iptvphkey'; // Update this to your actual repo
-  const url = `https://raw.githubusercontent.com/${repoBase}/main/keys/${fileName}`;
-  
-  // Debug output
-  console.log('Trying to fetch:', url);
+  const url = `https://raw.githubusercontent.com/cee-tv/iptvphkey/main/keys/${fileName}`;
 
   try {
-    const response = await fetch(url, { cache: 'no-store' });
-    console.log('Response status:', response.status);
-    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Key not found yet.');
     const key = await response.text();
     keyArea.innerHTML = `
       <div class="alert alert-success d-flex align-items-center justify-content-center" role="alert" style="width:100%;">
@@ -91,16 +123,10 @@ async function loadKey() {
       </div>
     `;
   } catch (e) {
-    console.error('Error fetching key:', e);
     keyArea.innerHTML = `
-      <div class="alert alert-warning d-flex flex-column align-items-center justify-content-center" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2 mb-2"></i>
-        <div class="text-center">
-          <div>Key not available yet for ${currentDuration.value} ${currentDuration.unit}.</div>
-          <small class="text-muted">Checking for: ${fileName}</small>
-          <br><br>
-          <button class="btn btn-sm btn-outline-primary" onclick="loadKey()">Retry</button>
-        </div>
+      <div class="alert alert-warning d-flex align-items-center justify-content-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span>Key not available yet for ${currentDuration.value} ${currentDuration.unit} duration.</span>
       </div>
     `;
   }

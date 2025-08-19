@@ -6,11 +6,11 @@ const directLink = {
 let currentDuration = { value: 1, unit: 'days' };
 
 function getDurationFileName() {
-  // Get today's date in UTC
-  const now = new Date();
-  const yyyy = now.getUTCFullYear();
-  const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(now.getUTCDate()).padStart(2, '0');
+  // Use PH time (UTC+8) to match backend
+  const phTime = new Date(new Date().getTime() + (8 * 60 * 60 * 1000));
+  const yyyy = phTime.getUTCFullYear();
+  const mm = String(phTime.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(phTime.getUTCDate()).padStart(2, '0');
   const durationDays = convertToDays(currentDuration.value, currentDuration.unit);
   return `${yyyy}-${mm}-${dd}_${durationDays}days.txt`;
 }
@@ -72,11 +72,16 @@ async function loadKey() {
   `;
 
   const fileName = getDurationFileName();
-  const url = `https://raw.githubusercontent.com/cee-tv/iptvphkey/main/keys/${fileName}`;
+  const repoBase = 'cee-tv/iptvphkey'; // Update this to your actual repo
+  const url = `https://raw.githubusercontent.com/${repoBase}/main/keys/${fileName}`;
+  
+  // Debug output
+  console.log('Trying to fetch:', url);
 
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Key not found yet.');
+    const response = await fetch(url, { cache: 'no-store' });
+    console.log('Response status:', response.status);
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     const key = await response.text();
     keyArea.innerHTML = `
       <div class="alert alert-success d-flex align-items-center justify-content-center" role="alert" style="width:100%;">
@@ -86,10 +91,16 @@ async function loadKey() {
       </div>
     `;
   } catch (e) {
+    console.error('Error fetching key:', e);
     keyArea.innerHTML = `
-      <div class="alert alert-warning d-flex align-items-center justify-content-center" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        <span>Key not available yet for ${currentDuration.value} ${currentDuration.unit} duration.</span>
+      <div class="alert alert-warning d-flex flex-column align-items-center justify-content-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 mb-2"></i>
+        <div class="text-center">
+          <div>Key not available yet for ${currentDuration.value} ${currentDuration.unit}.</div>
+          <small class="text-muted">Checking for: ${fileName}</small>
+          <br><br>
+          <button class="btn btn-sm btn-outline-primary" onclick="loadKey()">Retry</button>
+        </div>
       </div>
     `;
   }

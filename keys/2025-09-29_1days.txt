@@ -1,0 +1,6 @@
+KEY: NWS88DF9CVOE
+VALID FROM: 2025-09-29
+VALID UNTIL: 2025-09-30
+VALID FOR: 1 day(s)
+
+Please use this key within the validity period.

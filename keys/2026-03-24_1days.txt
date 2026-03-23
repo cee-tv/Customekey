@@ -1,0 +1,6 @@
+KEY: 64698KYSKCA0
+VALID FROM: 2026-03-24
+VALID UNTIL: 2026-03-25
+VALID FOR: 1 day(s)
+
+Please use this key within the validity period.

@@ -1,0 +1,6 @@
+KEY: AV87OVSSG2L2
+VALID FROM: 2026-04-05
+VALID UNTIL: 2026-04-06
+VALID FOR: 1 day(s)
+
+Please use this key within the validity period.

@@ -1,0 +1,6 @@
+KEY: ASG3LEQLL1T9
+VALID FROM: 2026-06-10
+VALID UNTIL: 2026-06-11
+VALID FOR: 1 day(s)
+
+Please use this key within the validity period.
